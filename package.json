@@ -1,0 +1,19 @@
+{
+  "name": "balancer-poc",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "yarn clean && tsc --build",
+    "start": "yarn build && node dist/index.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@across-protocol/app-sdk": "^0.2.0",
+    "@balancer/sdk": "^2.7.1",
+    "axios": "^1.7.9",
+    "viem": "^2.22.8"
+  }
+}
