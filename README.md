@@ -28,6 +28,6 @@ yarn start
 ```
 
 This will:
-1. Bridge USDC from Arbitrum to Mainnet using Across Protocol
+1. Bridge USDC from Base to Arbitrum using Across Protocol
 2. Approve the swap contract to spend the received tokens
-3. Swap the received tokens on Balancer
+3. Swap the bridged USDC tokens to WETH via Balancer
