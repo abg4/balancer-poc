@@ -52,18 +52,18 @@ async function executeSwap() {
     const balance = await getBalance(
       originChain,
       userAddress,
-      originDepositToken
+      originDepositToken.address
     );
     if (balance < inputAmount) {
       throw new Error(
         `Insufficient balance. Required: ${formatUnits(
           inputAmount,
-          6
-        )}, Available: ${formatUnits(balance, 6)}`
+          originDepositToken.decimals
+        )}, Available: ${formatUnits(balance, originDepositToken.decimals)}`
       );
     }
     logger.success(
-      `Balance check passed. Available: ${formatUnits(balance, 6)}`
+      `Balance check passed. Available: ${formatUnits(balance, originDepositToken.decimals)}`
     );
 
     // sets up the AcrossClient and configures chains
@@ -148,7 +148,7 @@ async function executeSwap() {
       route: {
         originChainId: originChain.id,
         destinationChainId: destinationChain.id,
-        inputToken: originDepositToken,
+        inputToken: originDepositToken.address,
         outputToken: balancerTokenIn.address,
       },
       inputAmount: inputAmount,
