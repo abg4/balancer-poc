@@ -3,7 +3,8 @@ import dotenv from "dotenv";
 import { formatUnits } from "viem";
 import {
   generateApproveCallData,
-  generateSwapCallData,
+  generateAddLiquidityCallData,
+  generateDrainTokensCallData,
 } from "./utils/transactions.js";
 import {
   createUserWallet,
@@ -17,16 +18,18 @@ import {
   originChain,
   destinationChain,
   originDepositToken,
-  balancerTokenIn,
-  balancerTokenOut,
+  balancerLpTokenOne,
+  balancerLpTokenTwo,
   acrossMulticallHandler,
+  balancerLpPool,
+  balancerVault
 } from "./config.js";
 import { INTEGRATOR_ID } from "./utils/constants.js";
 
 dotenv.config();
 
-// Function to execute the swap
-async function executeSwap() {
+// Function to add liquidity to a Balancer pool crosschain using Across Protocol
+async function executeAddLiquidity() {
   const privateKey = process.env.PRIVATE_KEY;
   if (!privateKey) {
     throw new Error("PRIVATE_KEY is not set");
@@ -74,15 +77,13 @@ async function executeSwap() {
 
     logger.success("Clients initialized successfully");
 
-    // Generates the initial swap call data
-    // This is used to estimate the gas for the swap
+    // Generates the initial liquidity add call data
+    // This is used to estimate the gas for the liquidity add
     // The gas estimation is used for the Across bridge fee
-    const initialSwapCallData = await generateSwapCallData(
+    const initialLiquidityAddCallData = await generateAddLiquidityCallData(
       inputAmount.toString(),
-      balancerTokenIn,
-      balancerTokenOut,
-      acrossMulticallHandler,
-      userAddress,
+      balancerLpTokenOne,
+      balancerLpTokenTwo,
       destinationChain,
       true
     );
@@ -90,12 +91,12 @@ async function executeSwap() {
     // Define the transactions executed after bridge transaction
     const crossChainMessage: CrossChainMessage = {
       actions: [
-        // Approve the swap contract to spend the input amount
+        // Approve the vault contract to spend the input amount
         {
-          target: balancerTokenIn.address,
+          target: balancerLpTokenOne.address,
           // Generate the approve call data
           callData: generateApproveCallData(
-            initialSwapCallData.to,
+            balancerVault,
             inputAmount
           ),
           value: 0n,
@@ -103,7 +104,7 @@ async function executeSwap() {
           update: (updatedOutputAmount: bigint) => {
             return {
               callData: generateApproveCallData(
-                initialSwapCallData.to,
+                balancerVault,
                 updatedOutputAmount
               ),
             };
@@ -111,45 +112,52 @@ async function executeSwap() {
         },
         {
           // Balancer contract address
-          target: initialSwapCallData.to,
+          target: initialLiquidityAddCallData.to,
           // Generates the exchange call data
-          callData: initialSwapCallData.callData,
+          callData: initialLiquidityAddCallData.callData,
           value: 0n,
           // we use the update function to update the calldata based on the output amount from the quote
           update: async (updatedOutputAmount: bigint) => {
-            const updatedSwapCallData = await generateSwapCallData(
+            const updatedLiquidityAddCallData = await generateAddLiquidityCallData(
               updatedOutputAmount.toString(),
-              balancerTokenIn,
-              balancerTokenOut,
-              acrossMulticallHandler,
-              userAddress,
+              balancerLpTokenOne,
+              balancerLpTokenTwo,
               destinationChain,
               false
             );
-            // For PoC purposes, throwing an error if the swap contract address changes
+            // For PoC purposes, throwing an error if the vault contract address changes
             // In production, the approval address could be updated. 
             // The exception is if the gas estimation could be significantly different
-            if (updatedSwapCallData.to !== initialSwapCallData.to) {
-              throw new Error("Swap contract address changed");
+            if (updatedLiquidityAddCallData.to !== initialLiquidityAddCallData.to) {
+              throw new Error("Vault contract address changed");
             }
             return {
-              callData: updatedSwapCallData.callData,
+              callData: updatedLiquidityAddCallData.callData,
             };
           },
         },
+        {
+          // Balancer contract address
+          target: acrossMulticallHandler,
+          // Generates the exchange call data
+          callData: generateDrainTokensCallData(
+            balancerLpPool,
+            userAddress
+          ),
+          value: 0n,
+        },
       ],
-      // address to send the output token to if the swap fails or any leftover tokens
+      // address to send the output token to if the liquidity add fails or any leftover tokens
       fallbackRecipient: userAddress,
     };
 
-
-    // Retrieves a quote for the bridge with approval and swap actions
+    // Retrieves a quote for the bridge with approval and liquidity add actions
     const quote = await client.getQuote({
       route: {
         originChainId: originChain.id,
         destinationChainId: destinationChain.id,
         inputToken: originDepositToken.address,
-        outputToken: balancerTokenIn.address,
+        outputToken: balancerLpTokenOne.address, // WETH on destination chain
       },
       inputAmount: inputAmount,
       crossChainMessage: crossChainMessage,
@@ -198,7 +206,7 @@ async function executeSwap() {
             )}`
           );
           logger.success(
-            actionSuccess ? "Swap completed successfully" : "Swap failed"
+            actionSuccess ? "Liquidity add completed successfully" : "Liquidity add failed"
           );
         }
       },
@@ -206,9 +214,9 @@ async function executeSwap() {
 
     logger.step("Bridge transaction completed");
   } catch (error) {
-    logger.error("Failed to execute swap", error);
+    logger.error("Failed to execute liquidity add", error);
     throw error;
   }
 }
 
-executeSwap();
+executeAddLiquidity();

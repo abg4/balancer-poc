@@ -9,27 +9,30 @@ import { parseUnits, type Address } from "viem";
  */
 
 // Input amount to be used for bridge transaction.
-// The amount is scaled to the inputToken's decimals (6 decimals for USDC).
-const inputAmount = parseUnits("10", 6);
+// The amount is scaled to the inputToken's decimals (18 decimals for WETH).
+const inputAmount = parseUnits("0.005", 18);
 
-// Destination chain where funds are received and the Balancer swap is made.
+// Destination chain where funds are received and the Balancer LiquidityAdd is made.
 const destinationChain = arbitrum;
 
-// Token used as input for the Balancer swap on the destination chain.
-const balancerTokenIn = new Token(
+// Token used as input for the Balancer LiquidityAdd on the destination chain.
+const balancerLpTokenOne = new Token(
   destinationChain.id,
-  "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-  6,
-  "USDC"
-);
-
-// Token used as output for the Balancer swap on the destination chain.
-const balancerTokenOut = new Token(
-  destinationChain.id,
-  "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
   18,
   "WETH"
 );
+
+const balancerLpTokenTwo = new Token(
+  destinationChain.id,
+  "0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8",
+  18,
+  "rETH"
+);
+
+const balancerLpPool = "0xd0EC47c54cA5e20aaAe4616c25C825c7f48D4069" as `0x${string}`;
+const balancerPoolId = "0xd0ec47c54ca5e20aaae4616c25c825c7f48d40690000000000000000000004ef" as `0x${string}`;
+const balancerVault = "0xBA12222222228d8Ba445958a75a0704d566BF2C8" as `0x${string}`;
 
 /**
  * ACROSS CONFIGURATION
@@ -47,8 +50,8 @@ const acrossMulticallHandler = "0x924a9f036260ddd5808007e1aa95f08ed08aa569";
 // Origin deposit token used for the Across deposit.
 // This should be the same asset (USDC, WETH, WBTC, etc.) as the balancerTokenIn.
 const originDepositToken = {
-  address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
-  decimals: 6,
+  address: "0x4200000000000000000000000000000000000006" as Address,
+  decimals: 18,
 };
 
 export {
@@ -56,7 +59,10 @@ export {
   originChain,
   destinationChain,
   originDepositToken,
-  balancerTokenIn,
-  balancerTokenOut,
+  balancerLpTokenOne,
+  balancerLpTokenTwo,
+  balancerLpPool,
+  balancerVault,
+  balancerPoolId,
   acrossMulticallHandler,
 };
