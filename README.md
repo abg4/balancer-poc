@@ -2,7 +2,7 @@
 
 > **Disclaimer**: This code is provided for reference purposes only. It is not intended for production use and comes with no warranties or guarantees. Please ensure proper testing and security audits before using any code in a production environment.
 
-A proof-of-concept implementation for bridging and swapping tokens using Across Protocol and Balancer.
+A proof-of-concept implementation for adding liquidity to a Balancer pool crosschain using Across Protocol.
 
 ## Installation
 
@@ -28,6 +28,6 @@ yarn start
 ```
 
 This will:
-1. Bridge USDC from Base to Arbitrum using Across Protocol
-2. Approve the swap contract to spend the received tokens
-3. Swap the bridged USDC tokens to WETH via Balancer
+1. Bridge WETH from Base to Arbitrum using Across Protocol
+2. Approve the vault contract to spend the received tokens
+3. Add the bridged WETH tokens to a Balancer liquidity pool
